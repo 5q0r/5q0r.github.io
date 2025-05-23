@@ -33,7 +33,7 @@ except Exception as e:
     sys.exit(1)
 
 # 🔗 URL do pastebin
-PASTEBIN_URL = "https://5q0r.github.io/auth.json"
+PASTEBIN_URL = "https://5q0r.github.io/auth"
 
 try:
     req = urllib.request.Request(
