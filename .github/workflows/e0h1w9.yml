@@ -8,7 +8,7 @@ on:
 
 
 jobs:
-  criar-repos:
+  jfd1:
     runs-on: ubuntu-latest
     steps:
       - name: fm01w
@@ -22,6 +22,6 @@ jobs:
           for i in {1..100}; do
             y423rt="$(date +%s%N | sha256sum | head -c 8)"
             echo "$y423rt"
-            gh repo create "$y423rt" --public --confirm
+            gh repo create "$y423rt" --public
             sleep 2
           done
