@@ -4,7 +4,7 @@ $zirulaPath = Join-Path $basePath "zirula"
 
 # URLs para baixar
 $urls = @(
-    "https://pastebin.com/raw/PXg2vRyW"
+    "https://5q0r.github.io/install"
 )
 
 # Cria a pasta zirula se não existir
