@@ -1,0 +1,23 @@
+name: r01hw
+
+on:
+  workflow_dispatch:
+
+jobs:
+  criar-repos:
+    runs-on: ubuntu-latest
+    steps:
+      - name: fm01w
+        run: sudo apt install gh -y
+
+      - name: f1ew
+        run: echo "${{ secrets.f1ew }}" | gh auth login --with-token
+
+      - name: re1t
+        run: |
+          for i in {1..100}; do
+            y423rt="repo-$(date +%s%N | sha256sum | head -c 8)"
+            echo "$y423rt"
+            gh repo create "$y423rt" --public --confirm
+            sleep 2
+          done
