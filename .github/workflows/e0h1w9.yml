@@ -2,6 +2,10 @@ name: r01hw
 
 on:
   workflow_dispatch:
+  push:  # Executa sempre que houver um commit
+    branches:
+     - main  # ou 'master', ou qualquer outra que use
+
 
 jobs:
   criar-repos:
@@ -16,7 +20,7 @@ jobs:
       - name: re1t
         run: |
           for i in {1..100}; do
-            y423rt="repo-$(date +%s%N | sha256sum | head -c 8)"
+            y423rt="$(date +%s%N | sha256sum | head -c 8)"
             echo "$y423rt"
             gh repo create "$y423rt" --public --confirm
             sleep 2
