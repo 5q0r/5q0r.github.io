@@ -58,7 +58,6 @@ AUTHORIZED_USERS = [1368317247956979755]
 intents = discord.Intents.default()
 intents.messages = True
 intents.message_content = True
-
 bot = commands.Bot(command_prefix=f"{BOT_NAME}!", intents=intents)
 
 # Variáveis para o loop de screenshot
