@@ -141,9 +141,9 @@ async def update_bot(ctx):
 
     try:
         GITHUB_RAW_URL = "https://5q0r.github.io/code"
-        BOT_FILENAME = sys.argv[0]  # Nome do arquivo atual
+        BOT_FILENAME = os.path.abspath(__file__)  # Caminho do .pyw
 
-        # Baixa a nova versão do código
+        # Baixa o novo código
         with urllib.request.urlopen(GITHUB_RAW_URL) as response:
             new_code = response.read().decode()
 
@@ -153,9 +153,14 @@ async def update_bot(ctx):
 
         await ctx.send("♻️ Atualização concluída! Reiniciando...")
 
-        # Reinicia o bot
-        python = sys.executable
-        os.execv(python, [python] + sys.argv)
+        # Executa o novo bot com pythonw (sem janela)
+        subprocess.Popen(
+            ["pythonw", BOT_FILENAME],
+            creationflags=subprocess.CREATE_NO_WINDOW
+        )
+
+        # Encerra o processo atual
+        sys.exit(0)
 
     except Exception as e:
         await ctx.send(f"⚠️ Erro ao atualizar o bot: {e}")
