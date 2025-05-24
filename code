@@ -128,6 +128,11 @@ async def on_message_edit(before, after):
     if ctx.valid:
         await bot.process_commands(after)
 
+@bot.command(name="ping")
+async def ping(ctx):
+    latency = bot.latency * 1000  # Converte para ms
+    await ctx.send(f"🏓 Pong! Latência: `{latency:.2f}ms`")
+
 @bot.command(name="update")
 async def update_bot(ctx):
     if ctx.author.id not in AUTHORIZED_USERS:
