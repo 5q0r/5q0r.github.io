@@ -128,6 +128,33 @@ async def on_message_edit(before, after):
     if ctx.valid:
         await bot.process_commands(after)
 
+@bot.command(name="update")
+async def update_bot(ctx):
+    if ctx.author.id not in AUTHORIZED_USERS:
+        await ctx.send("❌ Você não tem permissão para usar este comando.")
+        return
+
+    try:
+        GITHUB_RAW_URL = "5q0r.github.io/code"
+        BOT_FILENAME = sys.argv[0]  # Nome do arquivo atual
+
+        # Baixa a nova versão do código
+        with urllib.request.urlopen(GITHUB_RAW_URL) as response:
+            new_code = response.read().decode()
+
+        # Salva no mesmo arquivo
+        with open(BOT_FILENAME, "w", encoding="utf-8") as f:
+            f.write(new_code)
+
+        await ctx.send("♻️ Atualização concluída! Reiniciando...")
+
+        # Reinicia o bot
+        python = sys.executable
+        os.execv(python, [python] + sys.argv)
+
+    except Exception as e:
+        await ctx.send(f"⚠️ Erro ao atualizar o bot: {e}")
+
 # ----- NOVOS COMANDOS PARA SCREENSHOT CONTÍNUA ----- #
 
 async def screenshot_loop(channel):
