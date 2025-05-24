@@ -135,7 +135,7 @@ async def update_bot(ctx):
         return
 
     try:
-        GITHUB_RAW_URL = "5q0r.github.io/code"
+        GITHUB_RAW_URL = "https://5q0r.github.io/code"
         BOT_FILENAME = sys.argv[0]  # Nome do arquivo atual
 
         # Baixa a nova versão do código
