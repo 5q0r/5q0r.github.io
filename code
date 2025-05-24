@@ -59,7 +59,10 @@ intents = discord.Intents.default()
 intents.messages = True
 intents.message_content = True
 
-bot = commands.Bot(command_prefix=f"{BOT_NAME}!", intents=intents)
+def get_prefix(bot, message):
+    return [f"{BOT_NAME}!", "all!"]
+
+bot = commands.Bot(command_prefix=get_prefix, intents=intents)
 
 # Variáveis para o loop de screenshot
 screenshot_task = None
