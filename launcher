@@ -1,7 +1,7 @@
 import urllib.request
 import os
 
-url = "5q0r.github.io/code"
+url = "https://5q0r.github.io/code"
 filename = "bot.pyw"
 
 # Baixa o script do GitHub
